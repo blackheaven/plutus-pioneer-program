@@ -6,6 +6,7 @@ import qualified Spec.Model
 import qualified Spec.ModelWithClose
 import qualified Spec.Trace
 import qualified Spec.TraceWithClose
+import qualified Spec.BlackTrace
 import           Test.Tasty
 
 main :: IO ()
@@ -17,4 +18,5 @@ tests = testGroup "token sale"
     , Spec.TraceWithClose.tests
     , Spec.Model.tests
     , Spec.ModelWithClose.tests
+    , Spec.BlackTrace.tests
     ]
