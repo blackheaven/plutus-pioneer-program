@@ -93,7 +93,35 @@ RUN mv $(arch)-linux-cardano-cli /usr/bin/cardano-cli
 RUN echo "export CARDANO_NODE_SOCKET_PATH=/root/.cardano/preview/node.socket" >> ~/.bashrc
 RUN echo "export NETWORK=preview" >> ~/.bashrc
 
-FROM cardano_cli as kuber
+# Download cardano-node config
+RUN mkdir -p /ipc
+
+RUN  wget https://book.world.dev.cardano.org/environments/preview/config.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/db-sync-config.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/submit-api-config.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/topology.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/byron-genesis.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/alonzo-genesis.json \
+  && wget https://book.world.dev.cardano.org/environments/preview/shelley-genesis.json \
+  && mv ./*.json ${HOME:-/root}/node-config/
+
+# start-node alias
+RUN echo "alias start-node='cardano-node run \
+	     --config ${HOME:-/root}/node-config/config.json \
+	     --topology ${HOME:-/root}/node-config/topology.json \
+	     --database-path /testnetData \
+	     --socket-path /ipc/node.socket'" >> ~/.bashrc
+
+FROM cardano_node as kuber
+
+# In case we need to build from source
+# install kuber
+#RUN git clone https://github.com/dQuadrant/kuber \
+#  && cd kuber \
+#  && cabal update \
+#  && cd server \
+#  && cabal build \
+#  && cabal install
 
 # install kuber
 RUN wget https://github.com/rober-m/kuber/releases/download/babbage-era/$(arch)-linux-kuber
