@@ -50,6 +50,7 @@ library
     import:             common-all
     hs-source-dirs:     lecture
                       , homework
+                      , experiments
     exposed-modules:    Gift
                       , Burn
                       , FortyTwo
@@ -57,6 +58,8 @@ library
                       , CustomTypes
                       , Homework1
                       , Homework2
+                      , Factoring
+    build-depends:      utilities
 
 test-suite week02-homework
     import:             common-all-tests
