@@ -157,7 +157,7 @@ RUN git clone https://github.com/input-output-hk/plutus-pioneer-program
 RUN cd plutus-pioneer-program/code && cabal update
 RUN cd plutus-pioneer-program/code && cabal build all
 
-RUN echo "alias serve-docs='python3 -m http.server -d /workspaces/docs/plutus-docs/haddock/'" >> ~/.bashrc
+RUN echo "alias serve-docs='python3 -m http.server -d /work/docs/plutus-docs/haddock/'" >> ~/.bashrc
 RUN echo "source <(cardano-cli --bash-completion-script cardano-cli)" >> ~/.bashrc
 
 FROM plutus as cargo
