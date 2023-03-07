@@ -3,7 +3,8 @@
 assets=/work/code/Week02/experiments
 keypath=/work/keys
 name=alice
-txin=21acf492f4a19bd695fac8a3576eebce98e5f2b6c45080088656e44f6432efc6#0
+# Alice's 1st TxHash
+txin="8d5805ff91c180bffa50998bfe50cf99fbd7f3fc9472a7a1fb24bdad4685935f#1"
 body="$assets/factoring.txbody"
 tx="$assets/factoring.tx"
 

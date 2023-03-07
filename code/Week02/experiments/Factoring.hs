@@ -8,7 +8,7 @@ module Factoring where
 
 import qualified Plutus.V2.Ledger.Api as PlutusV2
 import           PlutusTx             (compile)
-import           PlutusTx.Prelude     (Bool, Eq ((==)), Integer, traceIfFalse, traceIfTrue, ($), (||), MultiplicativeSemigroup (..), (&&))
+import           PlutusTx.Prelude     (Bool, Eq ((==)), (/=), Integer, traceIfFalse, ($), MultiplicativeSemigroup (..), (&&))
 import           Prelude              (IO)
 import           Utilities            (wrap, writeValidatorToFile)
 
@@ -17,8 +17,9 @@ import           Utilities            (wrap, writeValidatorToFile)
 
 --              Datum  Redeemer        ScriptContext
 mkValidator :: Integer -> (Integer, Integer) -> PlutusV2.ScriptContext -> Bool
-mkValidator t (x, y) _ = shouldNotBeOne && shouldBeFactors
-  where shouldNotBeOne = traceIfTrue "No factor should be 1" $ x == 1 || y == 1
+mkValidator t (x, y) _ = shouldNotBeOne x && shouldNotBeOne y && shouldBeFactors
+  where shouldNotBeOne :: Integer -> Bool
+        shouldNotBeOne n = traceIfFalse "No factor should be 1" $ n /= 1
         shouldBeFactors  = traceIfFalse "Not factors" $ x * y == t
 {-# INLINABLE mkValidator #-}
 
