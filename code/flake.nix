@@ -4,13 +4,13 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
-    horizon-plutus.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-plutus";
+    horizon-wave-ocean.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-wave-ocean";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   };
   outputs =
     inputs@{ self
     , flake-utils
-    , horizon-plutus
+    , horizon-wave-ocean
     , nixpkgs
     , ...
     }:
@@ -19,7 +19,7 @@
       pkgs = import nixpkgs { inherit system; };
       hsPkgs =
         with pkgs.haskell.lib;
-        horizon-plutus.legacyPackages.${system}.extend (hfinal: hprev:
+        horizon-wave-ocean.legacyPackages.${system}.extend (hfinal: hprev:
           {
             ppp-w02 = disableLibraryProfiling (hprev.callCabal2nix "ppp-w02" ./Week02 { });
             ppp-w03 = disableLibraryProfiling (hprev.callCabal2nix "ppp-w03" ./Week03 { });
