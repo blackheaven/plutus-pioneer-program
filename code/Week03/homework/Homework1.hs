@@ -7,13 +7,13 @@
 
 module Homework1 where
 
-import           Plutus.V1.Ledger.Interval (contains)
+import           Plutus.V1.Ledger.Interval (member, after, before)
 import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
                                        ScriptContext (scriptContextTxInfo),
-                                       Validator, TxInfo (..), to, mkValidatorScript)
+                                       Validator, TxInfo (..), mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (compile, unstableMakeIsData)
-import           PlutusTx.Prelude     (Bool (..), ($))
+import           PlutusTx.Prelude     -- (Bool (..), ($))
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
@@ -32,9 +32,8 @@ unstableMakeIsData ''VestingDatum
 -- or if beneficiary2 has signed the transaction and the deadline has passed.
 mkVestingValidator :: VestingDatum -> () -> ScriptContext -> Bool
 mkVestingValidator datum () ctx =
-    if deadlinePending
-      then signedByBeneficiary1
-      else signedByBeneficiary2
+      (isDeadlineNotReached && signedByBeneficiary1)
+      || (isDeadlineReached && signedByBeneficiary2)
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -45,8 +44,11 @@ mkVestingValidator datum () ctx =
     signedByBeneficiary2 :: Bool
     signedByBeneficiary2 = txSignedBy info $ beneficiary2 datum
 
-    deadlinePending :: Bool
-    deadlinePending = contains (to $ deadline datum) $ txInfoValidRange info
+    isDeadlineNotReached :: Bool
+    isDeadlineNotReached = after (deadline datum) (txInfoValidRange info)
+
+    isDeadlineReached :: Bool
+    isDeadlineReached = before (deadline datum) (txInfoValidRange info)
 
 {-# INLINABLE  mkWrappedVestingValidator #-}
 mkWrappedVestingValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
