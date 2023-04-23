@@ -12,8 +12,10 @@ module Utilities.Conversions
   , bytesFromHex
   , bytesToHex
   , tryReadAddress
+  , tryReadPubKeyHash
   ) where
 
+import           Control.Monad
 import qualified Cardano.Api                 as Api
 import           Cardano.Api.Shelley         (Address (..))
 import qualified Cardano.Api.Shelley         as Api
@@ -30,6 +32,7 @@ import           Data.Text                   (pack)
 import qualified Data.Text                   as Text
 import qualified Data.Time.Clock.POSIX       as Time
 import qualified Data.Time.Format.ISO8601    as Time
+import qualified Plutus.V1.Ledger.Address    as Plutus
 import           Plutus.V1.Ledger.Credential as Plutus
 import           Plutus.V1.Ledger.Crypto     as Plutus
 import           Plutus.V2.Ledger.Api        (CurrencySymbol (CurrencySymbol),
@@ -103,3 +106,5 @@ tryReadAddress x = case Api.deserialiseAddress Api.AsAddressAny $ pack x of
         , Plutus.addressStakingCredential = stakeReferenceLedgerToPlutus s
         }
 
+tryReadPubKeyHash :: String -> Maybe Plutus.PubKeyHash
+tryReadPubKeyHash = tryReadAddress >=> Plutus.toPubKeyHash

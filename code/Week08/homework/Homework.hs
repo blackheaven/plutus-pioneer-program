@@ -14,13 +14,30 @@ module Homework
     , saveStakeValidator'
     ) where
 
-import           Plutus.V2.Ledger.Api (Address, BuiltinData, PubKeyHash,
-                                       ScriptContext, StakeValidator,
-                                       mkStakeValidatorScript)
+import           Plutus.V1.Ledger.Value (valueOf)
+import           Plutus.V2.Ledger.Api   (Address, BuiltinData,
+                                         ScriptContext (scriptContextPurpose, scriptContextTxInfo),
+                                         ScriptPurpose (Certifying, Rewarding),
+                                         StakeValidator, StakingCredential,
+                                         TxInfo (txInfoOutputs, txInfoWdrl),
+                                         TxOut (txOutAddress, txOutValue),
+                                         PubKeyHash,
+                                         adaSymbol, adaToken,
+                                         mkStakeValidatorScript)
+import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import qualified PlutusTx
-import           PlutusTx.Prelude     (Bool (..), ($), (.))
-import           Prelude              (IO, String, undefined)
-import           Utilities            (wrapStakeValidator)
+import qualified PlutusTx.AssocMap      as PlutusTx
+import           PlutusTx.Prelude       (AdditiveSemigroup ((+)), Bool (..),
+                                         Eq ((==)), Integer,
+                                         Maybe (Just, Nothing),
+                                         MultiplicativeSemigroup ((*)),
+                                         Ord ((>=)), Semigroup ((<>)), foldl,
+                                         otherwise, traceError, traceIfFalse,
+                                         ($), (.), (&&))
+import           Prelude                (IO, String, ioError)
+import           System.IO.Error        (userError)
+import           Utilities              (tryReadAddress, wrapStakeValidator,
+                                         writeStakeValidatorToFile, tryReadPubKeyHash)
 
 -- | A staking validator with two parameters, a pubkey hash and an address. The validator
 --   should work as follows:
@@ -28,7 +45,33 @@ import           Utilities            (wrapStakeValidator)
 --   2.) The given address needs to receive at least half of all withdrawn rewards.
 {-# INLINABLE mkStakeValidator' #-}
 mkStakeValidator' :: PubKeyHash -> Address -> () -> ScriptContext -> Bool
-mkStakeValidator' _pkh _addr () _ctx = undefined
+mkStakeValidator' pkh addr () ctx = hasPurpose && isSigned
+  where
+    info :: TxInfo
+    info = scriptContextTxInfo ctx
+
+    amount :: StakingCredential -> Integer
+    amount cred = case PlutusTx.lookup cred $ txInfoWdrl info of
+        Just amt -> amt
+        Nothing  -> traceError "withdrawal not found"
+
+    paidToAddress :: Integer
+    paidToAddress = foldl f 0 $ txInfoOutputs info
+      where
+        f :: Integer -> TxOut -> Integer
+        f n o
+            | txOutAddress o == addr = n + valueOf (txOutValue o) adaSymbol adaToken
+            | otherwise              = n
+
+    hasPurpose :: Bool
+    hasPurpose =
+      case scriptContextPurpose ctx of
+        Certifying _   -> True
+        Rewarding cred -> traceIfFalse "insufficient reward sharing" $ 2 * paidToAddress >= amount cred
+        _              -> False
+
+    isSigned :: Bool
+    isSigned = traceIfFalse "missing signature" $ txSignedBy (scriptContextTxInfo ctx) pkh
 
 {-# INLINABLE mkWrappedStakeValidator' #-}
 mkWrappedStakeValidator' :: PubKeyHash -> Address -> BuiltinData -> BuiltinData -> ()
@@ -44,4 +87,10 @@ stakeValidator' pkh addr = mkStakeValidatorScript $
 ------------------------------------- HELPER FUNCTIONS --------------------------------------------
 
 saveStakeValidator' :: String -> String -> IO ()
-saveStakeValidator' _pkh _bech32 = undefined
+saveStakeValidator' pkh bech32 = do
+  case tryReadPubKeyHash pkh of
+    Nothing   -> ioError $ userError $ "Invalid address: " <> pkh
+    Just pkh' ->
+      case tryReadAddress bech32 of
+        Nothing   -> ioError $ userError $ "Invalid address: " <> bech32
+        Just addr -> writeStakeValidatorToFile "./assets/safestaking.plutus" $ stakeValidator' pkh' addr
